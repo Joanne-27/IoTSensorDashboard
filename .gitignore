@@ -1,0 +1,39 @@
+# Target - Maven build output
+target/
+*.war
+*.zip
+*.tar.gz
+*.rar
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.metadata/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.classpath
+.project
+.factorypath
+
+# Log files
+*.log
+
+# Database and Secrets
+# Note: In a real project, we ignore application.properties to hide passwords.
+# For university submission, you might want to include it, but be careful.
+# application.properties
+
+# OS specific files
+.DS_Store
+Thumbs.db
