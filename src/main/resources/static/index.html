@@ -88,6 +88,40 @@
                 <h2>Welcome back, <span id="userDisplay">User</span>!</h2>
             </header>
 
+            <section class="metrics-grid">
+                <div class="metric-card active-devices">
+                    <div class="metric-info">
+                        <h3>Total Active Devices</h3>
+                        <p id="totalActive">0</p>
+                    </div>
+                    <i class="fas fa-server"></i>
+                </div>
+
+                <div class="metric-card critical-alerts">
+                    <div class="metric-info">
+                        <h3>Critical Alerts</h3>
+                        <p id="criticalAlerts">0</p>
+                    </div>
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+
+                <div class="metric-card avg-temp">
+                    <div class="metric-info">
+                        <h3>Average Temp</h3>
+                        <p id="avgTemp">0.0 °C</p>
+                    </div>
+                    <i class="fas fa-thermometer-half"></i>
+                </div>
+
+                <div class="metric-card avg-humidity">
+                    <div class="metric-info">
+                        <h3>Average Humidity</h3>
+                        <p id="avgHumidity">0 %</p>
+                    </div>
+                    <i class="fas fa-tint"></i>
+                </div>
+            </section>
+
             <section class="stats-overview">
                 <div class="device-grid" id="deviceList">
                     <div class="loading-state">

@@ -111,7 +111,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function updateMetrics(devices) {
+        const totalActive = devices.length;
+        let criticalCount = 0;
+
+        // 1. Add Humidity accumulators
+        let tempSum = 0, tempCount = 0;
+        let humSum = 0, humCount = 0;
+
+        devices.forEach(device => {
+            const latestReading = device.readings && device.readings.length > 0
+                ? device.readings[device.readings.length - 1].value
+                : null;
+
+            if (latestReading !== null) {
+                // 2. Aggregate Temperature Data
+                if (device.type === 'Temperature') {
+                    tempSum += latestReading;
+                    tempCount++;
+                    if (latestReading > 28) criticalCount++;
+                }
+
+                // 3. Aggregate Humidity Data (NEW)
+                if (device.type === 'Humidity') {
+                    humSum += latestReading;
+                    humCount++;
+                    if (latestReading > 80) criticalCount++;
+                }
+            }
+        });
+
+        // Update the UI
+        document.getElementById('totalActive').innerText = totalActive;
+        document.getElementById('criticalAlerts').innerText = criticalCount;
+
+        // Average Temperature
+        document.getElementById('avgTemp').innerText = tempCount > 0
+            ? (tempSum / tempCount).toFixed(1) + ' °C'
+            : '-- °C';
+
+        // 4. Update Average Humidity
+        document.getElementById('avgHumidity').innerText = humCount > 0
+            ? (humSum / humCount).toFixed(1) + ' %'
+            : '-- %';
+    }
+
     function displayDevices(devices) {
+        updateMetrics(devices);
         const deviceListContainer = document.getElementById('deviceList');
         if (!deviceListContainer) return;
         
