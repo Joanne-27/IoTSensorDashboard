@@ -3,46 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard - Login</title>
+    <title>IoT Sensor Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .view {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+        .view.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #dashboardView.active {
+            display: block;
+        }
+    </style>
 </head>
-<body>
+<body id="appBody">
 
-<div class="main-container">
-    <div class="login-card">
-        <div class="login-left">
-            <div class="header-section">
-                <h1>Sign In</h1>
+<div id="loginView" class="view">
+    <div class="main-container">
+        <div class="login-card">
+            <div class="login-left">
+                <div class="header-section">
+                    <h1>Sign In</h1>
+                </div>
+
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="username">EMAIL ADDRESS</label>
+                        <input type="email" id="username" placeholder="name@mail.com" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">PASSWORD</label>
+                        <input type="password" id="password" placeholder="Password" required>
+                    </div>
+
+                    <button type="submit" class="signin-btn">Sign In</button>
+                </form>
+
+                    <button type="submit" class="signin-btn">Sign In</button>
+
+                </form>
+                <div id="messageArea" class="error-text"></div>
             </div>
 
-            <form id="loginForm">
-                <div class="input-group">
-                    <label>EMAIL ADDRESS</label>
-                    <input type="email" id="username" placeholder="name@mail.com" required>
+            <div class="login-right">
+                <div class="welcome-text">
+                    <h2>Welcome to login</h2>
+                    <p>Don't have an account?</p>
+                    <button class="signup-btn">Sign Up</button>
                 </div>
-
-                <div class="input-group">
-                    <label>PASSWORD</label>
-                    <input type="password" id="password" placeholder="Password" required>
-                </div>
-
-                <button type="submit" class="signin-btn">Sign In</button>
-
-            </form>
-            <div id="messageArea" class="error-text"></div>
-        </div>
-
-        <div class="login-right">
-            <div class="welcome-text">
-                <h2>Welcome to login</h2>
-                <p>Don't have an account?</p>
-                <button class="signup-btn">Sign Up</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="login.js"></script>
+<div id="dashboardView" class="view">
+    <div class="dashboard-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-microchip"></i>
+                <span>IoT Dashboard</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="active"><i class="fas fa-th-large"></i> Overview</a>
+                <a href="#"><i class="fas fa-thermometer-half"></i> Sensors</a>
+                <a href="#"><i class="fas fa-cog"></i> Settings</a>
+            </nav>
+            <button id="logoutBtn" class="logout-link">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </aside>
+
+        <main class="main-content">
+            <header class="content-header">
+                <h2>Welcome back, <span id="userDisplay">User</span>!</h2>
+            </header>
+
+            <section class="stats-overview">
+                <div class="device-grid" id="deviceList">
+                    <div class="loading-state">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <p>Fetching your sensor data...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
