@@ -260,3 +260,30 @@ body {
     color: #888;
     margin-left: 5px;
 }
+
+/* Branding Banner Styles */
+.app-branding {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px; /* Space between logo and "Sign In" */
+}
+
+.app-branding i {
+    color: #ff5e62;
+    font-size: 26px;
+}
+
+.app-branding span {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #333;
+    text-transform: uppercase;
+}
+
+.login-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically centers the whole group inside the card */
+}

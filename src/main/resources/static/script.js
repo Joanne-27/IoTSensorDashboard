@@ -50,8 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('jwtToken', data.token);
                     localStorage.setItem('username', username);
                     showView('dashboardView');
+                } else if (response.status === 401) {
+                    const message = await response.text();
+                    messageArea.innerText = message || 'Invalid username or password.';
                 } else {
-                    messageArea.innerText = 'Invalid username or password.';
+                    messageArea.innerText = 'Something went wrong. Please try again later.';
                 }
             } catch (error) {
                 console.error('Fetch error:', error);

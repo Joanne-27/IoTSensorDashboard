@@ -18,14 +18,17 @@ public class JwtAuthenticationController {
     @Autowired private JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> createAuthenticationToken(@RequestBody JwtRequest request) {
-            // This is where the comparison happens
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest request) {
+        try {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
             String token = jwtService.generateToken((UserDetails) auth.getPrincipal());
             return ResponseEntity.ok(new JwtResponse(token));
-
-
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(401).body("Incorrect credentials.");
+        } catch (DisabledException e) {
+            return ResponseEntity.status(401).body("User account is disabled.");
+        }
     }
 }
