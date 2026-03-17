@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let cachedDevices = [];
     let deviceToDeleteId = null;
     let deviceToEditSettingsId = null;
+    let refreshInterval = null;
 
     // --- View Management ---
     function showView(viewId) {
@@ -207,7 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok) {
                     const modalElement = document.getElementById('deleteDeviceModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    if (modalInstance) modalInstance.hide();
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
 
                     // Refresh Device List
                     fetchDevices(token);
@@ -342,6 +345,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Clear Dashboard State
             cachedDevices = [];
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
 
             // Reset Dashboard UI
             const userDisplay = document.getElementById('userDisplay');
@@ -390,6 +397,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         fetchDevices(token);
+
+        // Start real-time updates every 10 seconds
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+            const currentToken = sessionStorage.getItem('jwtToken');
+            if (currentToken) {
+                fetchDevices(currentToken);
+            }
+        }, 10000);
     }
 
     async function fetchDevices(token) {
@@ -408,7 +424,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const devices = await response.json();
                 cachedDevices = devices;
+
+                // Update Overview Grid
                 displayDevices(devices);
+
+                // Update Sensors Table if it is visible
+                const sensorsContent = document.getElementById('sensorsContent');
+                if (sensorsContent && sensorsContent.style.display !== 'none') {
+                    displaySensorsTable(devices);
+                }
             } else {
                 deviceListContainer.innerHTML = `<p class="error-text">Failed to load devices. Status: ${response.status}</p>`;
             }

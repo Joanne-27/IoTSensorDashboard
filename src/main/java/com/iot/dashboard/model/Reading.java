@@ -19,12 +19,15 @@ public class Reading {
     @JsonIgnore
     private Device device;
 
-    public Reading() {}
+    public Reading() {
+        // Required by for entity instantiation
+    }
 
     // Getters and Setters
     public Double getValue() { return value; }
     public void setValue(Double value) { this.value = value; }
     public LocalDateTime getTimestamp() { return timestamp; }
+    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
     public Device getDevice() { return device; }
     public void setDevice(Device device) { this.device = device; }
 }

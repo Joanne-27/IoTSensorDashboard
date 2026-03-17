@@ -25,7 +25,7 @@ public class Device {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore // Prevents the infinite JSON recursion loop
+    @JsonIgnore
     private User user;
 
     @com.fasterxml.jackson.annotation.JsonProperty("owner")
