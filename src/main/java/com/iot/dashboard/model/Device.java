@@ -25,7 +25,14 @@ public class Device {
     @JsonIgnore // Prevents the infinite JSON recursion loop
     private User user;
 
-    public Device() {}
+    @com.fasterxml.jackson.annotation.JsonProperty("owner")
+    public String getOwner() {
+        return user != null ? user.getUsername() : null;
+    }
+
+    public Device() {
+        // Required by for entity instantiation
+    }
 
     // Getters and Setters
     public Integer getId() { return id; }

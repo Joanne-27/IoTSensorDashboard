@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logoutBtn');
     const appBody = document.getElementById('appBody');
 
+    let cachedDevices = [];
+    let deviceToDeleteId = null;
+
     // --- View Management ---
     function showView(viewId) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -15,13 +18,235 @@ document.addEventListener('DOMContentLoaded', () => {
         if (viewId === 'dashboardView') {
             appBody.classList.add('dashboard-body');
             initDashboard();
+
+            // Check for Admin Role and show "Add Device" button
+            const userRole = sessionStorage.getItem('userRole');
+            const addDeviceBtn = document.getElementById('addDeviceBtn');
+            if (addDeviceBtn) {
+                addDeviceBtn.style.setProperty('display', userRole === 'ROLE_ADMIN' ? 'block' : 'none', 'important');
+            }
         } else {
             appBody.classList.remove('dashboard-body');
         }
     }
 
+    function switchDashboardTab(tabId) {
+        // Toggle Active Link
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        if (tabId === 'overview') {
+            document.getElementById('overviewLink').classList.add('active');
+            document.getElementById('overviewContent').style.display = 'block';
+            document.getElementById('sensorsContent').style.display = 'none';
+            displayDevices(cachedDevices); // Refresh grid
+        } else if (tabId === 'sensors') {
+            document.getElementById('sensorsLink').classList.add('active');
+            document.getElementById('overviewContent').style.display = 'none';
+            document.getElementById('sensorsContent').style.display = 'block';
+            if (deviceSearchInput) deviceSearchInput.value = ''; // Reset search on tab switch
+            displaySensorsTable(cachedDevices); // Populate table
+        }
+    }
+
+    // --- Tab Event Listeners ---
+    const overviewLink = document.getElementById('overviewLink');
+    const sensorsLink = document.getElementById('sensorsLink');
+    const addDeviceBtn = document.getElementById('addDeviceBtn');
+    const cancelDeviceBtn = document.getElementById('cancelDeviceBtn');
+    const saveDeviceBtn = document.getElementById('saveDeviceBtn');
+    const addDeviceForm = document.getElementById('addDeviceForm');
+    const addDeviceMessage = document.getElementById('addDeviceMessage');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const cancelDeleteConfirmBtn = document.getElementById('cancelDeleteConfirmBtn');
+    const deviceSearchInput = document.getElementById('deviceSearch');
+    const deviceTypeSelect = document.getElementById('deviceType');
+    const deviceUnitSelect = document.getElementById('deviceUnit');
+
+    if (deviceTypeSelect && deviceUnitSelect) {
+        deviceTypeSelect.addEventListener('change', (e) => {
+            const selectedType = e.target.value;
+            const unitMapping = {
+                'Temperature': '°C',
+                'Humidity': '%',
+                'Pressure': 'hPa',
+                'Light': 'lx',
+                'CO2': 'ppm',
+                'Motion': 'Binary'
+            };
+            
+            if (unitMapping[selectedType]) {
+                deviceUnitSelect.value = unitMapping[selectedType];
+            }
+        });
+    }
+
+    if (deviceSearchInput) {
+        deviceSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredDevices = cachedDevices.filter(device =>
+                device.name.toLowerCase().includes(searchTerm) ||
+                device.type.toLowerCase().includes(searchTerm) ||
+                device.id.toString().includes(searchTerm) ||
+                (device.owner && device.owner.toLowerCase().includes(searchTerm))
+            );
+            displaySensorsTable(filteredDevices);
+        });
+    }
+
+    if (overviewLink) {
+        overviewLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchDashboardTab('overview');
+        });
+    }
+
+    if (sensorsLink) {
+        sensorsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchDashboardTab('sensors');
+        });
+    }
+
+    if (addDeviceBtn) {
+        addDeviceBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (addDeviceForm) addDeviceForm.reset();
+            if (addDeviceMessage) addDeviceMessage.innerText = '';
+
+            // Populate user dropdown
+            const token = sessionStorage.getItem('jwtToken');
+            if (token) {
+                fetchUsers(token);
+            }
+
+            const modalElement = document.getElementById('addDeviceModal');
+            if (window.bootstrap && window.bootstrap.Modal) {
+                let modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modal.show();
+            }
+        });
+    }
+
+    if (cancelDeviceBtn) {
+        cancelDeviceBtn.addEventListener('click', () => {
+            const modalElement = document.getElementById('addDeviceModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        });
+    }
+
+    if (cancelDeleteConfirmBtn) {
+        cancelDeleteConfirmBtn.addEventListener('click', () => {
+            const modalElement = document.getElementById('deleteDeviceModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        });
+    }
+
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (!deviceToDeleteId) return;
+
+            const token = sessionStorage.getItem('jwtToken');
+            try {
+                const response = await fetch(`/api/devices/${deviceToDeleteId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (response.ok) {
+                    const modalElement = document.getElementById('deleteDeviceModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) modalInstance.hide();
+
+                    // Refresh Device List
+                    fetchDevices(token);
+                } else {
+                    console.error('Failed to delete device:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error deleting device:', error);
+            } finally {
+                deviceToDeleteId = null;
+            }
+        });
+    }
+
+    async function fetchUsers(token) {
+        try {
+            const response = await fetch('/api/users', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (response.ok) {
+                const users = await response.json();
+                const userDropdown = document.getElementById('assignUser');
+                if (userDropdown) {
+                    // Keep the first placeholder option
+                    userDropdown.innerHTML = '<option value="" selected disabled>Select a user</option>';
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.username;
+                        userDropdown.appendChild(option);
+                    });
+                }
+            } else {
+                console.error('Failed to fetch users:', await response.text());
+            }
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    }
+
+    if (saveDeviceBtn) {
+        saveDeviceBtn.addEventListener('click', async () => {
+            const name = document.getElementById('deviceName').value;
+            const type = document.getElementById('deviceType').value;
+            const unit = document.getElementById('deviceUnit').value;
+            const userId = document.getElementById('assignUser').value;
+
+            if (!name || !type || !unit || !userId) {
+                addDeviceMessage.innerText = 'Please fill in all fields.';
+                return;
+            }
+
+            const token = sessionStorage.getItem('jwtToken');
+            try {
+                const response = await fetch('/api/devices', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, type, unit, userId: parseInt(userId) })
+                });
+
+                if (response.status === 201) {
+                    // Success!
+                    const modalElement = document.getElementById('addDeviceModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) modalInstance.hide();
+
+                    // Refresh Device List
+                    fetchDevices(token);
+                } else {
+                    const errorMsg = await response.text();
+                    addDeviceMessage.innerText = errorMsg || 'Failed to save device.';
+                }
+            } catch (error) {
+                console.error('Error saving device:', error);
+                addDeviceMessage.innerText = 'Server error occurred.';
+            }
+        });
+    }
+
     // --- Authentication Check ---
-    const token = localStorage.getItem('jwtToken');
+    const token = sessionStorage.getItem('jwtToken');
     if (token) {
         showView('dashboardView');
     } else {
@@ -47,8 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    localStorage.setItem('jwtToken', data.token);
-                    localStorage.setItem('username', username);
+                    sessionStorage.setItem('jwtToken', data.token);
+                    sessionStorage.setItem('username', username);
+                    sessionStorage.setItem('userRole', data.role);
                     showView('dashboardView');
                 } else if (response.status === 401) {
                     const message = await response.text();
@@ -66,15 +292,49 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Logout Logic ---
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.clear();
+            sessionStorage.clear();
+
+            // Clear Dashboard State
+            cachedDevices = [];
+
+            // Reset Dashboard UI
+            const userDisplay = document.getElementById('userDisplay');
+            if (userDisplay) userDisplay.innerText = 'User';
+
+            const deviceListContainer = document.getElementById('deviceList');
+            if (deviceListContainer) {
+                deviceListContainer.innerHTML = `
+                    <div class="loading-state">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <p>Fetching your sensor data...</p>
+                    </div>
+                `;
+            }
+
+            const tableBody = document.getElementById('sensorsTableBody');
+            if (tableBody) tableBody.innerHTML = '';
+
+            // Reset Metrics
+            ['totalActive', 'criticalAlerts'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = '0';
+            });
+            const avgTemp = document.getElementById('avgTemp');
+            if (avgTemp) avgTemp.innerText = '0.0 °C';
+            const avgHumidity = document.getElementById('avgHumidity');
+            if (avgHumidity) avgHumidity.innerText = '0 %';
+
+            // Reset sidebar navigation to overview
+            switchDashboardTab('overview');
+
             showView('loginView');
         });
     }
 
     // --- Dashboard Logic ---
     function initDashboard() {
-        const token = localStorage.getItem('jwtToken');
-        const fullEmail = localStorage.getItem('username');
+        const token = sessionStorage.getItem('jwtToken');
+        const fullEmail = sessionStorage.getItem('username');
 
         if (fullEmail) {
             const rawName = fullEmail.split('@')[0];
@@ -101,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const devices = await response.json();
+                cachedDevices = devices;
                 displayDevices(devices);
             } else {
                 deviceListContainer.innerHTML = `<p class="error-text">Failed to load devices. Status: ${response.status}</p>`;
@@ -160,13 +421,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMetrics(devices);
         const deviceListContainer = document.getElementById('deviceList');
         if (!deviceListContainer) return;
-        
+
         deviceListContainer.innerHTML = '';
 
         if (devices.length === 0) {
             deviceListContainer.innerHTML = '<p>No devices found for your account.</p>';
             return;
         }
+
+        const isAdmin = sessionStorage.getItem('userRole') === 'ROLE_ADMIN';
 
         devices.forEach(device => {
             const card = document.createElement('div');
@@ -180,6 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (device.type === 'Humidity') icon = 'fa-tint';
             if (device.type === 'Security' || device.type === 'Motion') icon = 'fa-shield-alt';
 
+            const ownerHtml = isAdmin ? `<p class="device-owner"><i class="fas fa-user"></i> ${device.owner}</p>` : '';
+
             card.innerHTML = `
                 <div class="card-icon"><i class="fas ${icon}"></i></div>
                 <h3>${device.name}</h3>
@@ -188,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="unit">${device.unit}</span>
                 </div>
                 <p class="device-type">${device.type}</p>
+                ${ownerHtml}
                 <div class="device-status">
                     <span class="status-indicator active"></span>
                     Connected
@@ -195,5 +461,71 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             deviceListContainer.appendChild(card);
         });
+    }
+
+    function displaySensorsTable(devices) {
+        const tableBody = document.getElementById('sensorsTableBody');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '';
+
+        if (devices.length === 0) {
+            const searchTerm = deviceSearchInput ? deviceSearchInput.value : '';
+            const message = searchTerm
+                ? `No devices matching "${searchTerm}" found.`
+                : 'No sensor data found.';
+            tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">${message}</td></tr>`;
+            return;
+        }
+
+        const isAdmin = sessionStorage.getItem('userRole') === 'ROLE_ADMIN';
+
+        // Show/Hide "User" Header and "Actions" Header in table
+        document.querySelectorAll('.data-table th.admin-only, .data-table td.admin-only').forEach(el => {
+            el.style.setProperty('display', isAdmin ? 'table-cell' : 'none', 'important');
+        });
+
+        devices.forEach(device => {
+            const tr = document.createElement('tr');
+            const latestReading = device.readings && device.readings.length > 0
+                ? device.readings[device.readings.length - 1].value + ' ' + device.unit
+                : '--';
+
+            const ownerTd = isAdmin ? `<td><span class="owner-badge">${device.owner}</span></td>` : '';
+            const actionsTd = isAdmin ? `
+                <td>
+                    <button class="btn-delete-icon" data-id="${device.id}" title="Delete Device">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            ` : '';
+
+            tr.innerHTML = `
+                <td>#${device.id}</td>
+                <td><strong>${device.name}</strong></td>
+                ${ownerTd}
+                <td>${device.type}</td>
+                <td>${latestReading}</td>
+                <td><span class="status-badge online">Online</span></td>
+                ${actionsTd}
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // Add event listeners for delete buttons
+        if (isAdmin) {
+            tableBody.querySelectorAll('.btn-delete-icon').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    deviceToDeleteId = this.getAttribute('data-id');
+                    const modalElement = document.getElementById('deleteDeviceModal');
+                    if (window.bootstrap && window.bootstrap.Modal) {
+                        let modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                        modal.show();
+                    }
+                });
+            });
+        }
     }
 });

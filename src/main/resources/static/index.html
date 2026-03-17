@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IoT Sensor Dashboard</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -20,9 +21,15 @@
         #dashboardView.active {
             display: block;
         }
+        /* Fix for simultaneous modal display */
+        .modal:not(.show) {
+            display: none !important;
+        }
     </style>
 </head>
 <body id="appBody">
+
+<div class="app-wrapper">
 
 <div id="loginView" class="view">
     <div class="main-container">
@@ -74,9 +81,9 @@
                 <span>IoT Dashboard</span>
             </div>
             <nav class="sidebar-nav">
-                <a href="#" class="active"><i class="fas fa-th-large"></i> Overview</a>
-                <a href="#"><i class="fas fa-thermometer-half"></i> Sensors</a>
-                <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                <a href="#" id="overviewLink" class="active"><i class="fas fa-th-large"></i> Overview</a>
+                <a href="#" id="sensorsLink"><i class="fas fa-thermometer-half"></i> Sensors</a>
+                <a href="#" id="settingsLink"><i class="fas fa-cog"></i> Settings</a>
             </nav>
             <button id="logoutBtn" class="logout-link">
                 <i class="fas fa-sign-out-alt"></i> Logout
@@ -86,6 +93,9 @@
         <main class="main-content">
             <header class="content-header">
                 <h2>Welcome back, <span id="userDisplay">User</span>!</h2>
+                <button id="addDeviceBtn" class="admin-only" style="display:none;">
+                    <i class="fas fa-plus"></i> Add Device
+                </button>
             </header>
 
             <section class="metrics-grid">
@@ -122,7 +132,7 @@
                 </div>
             </section>
 
-            <section class="stats-overview">
+            <section class="stats-overview" id="overviewContent">
                 <div class="device-grid" id="deviceList">
                     <div class="loading-state">
                         <i class="fas fa-circle-notch fa-spin"></i>
@@ -130,10 +140,121 @@
                     </div>
                 </div>
             </section>
+
+            <section class="sensors-overview" id="sensorsContent" style="display: none;">
+                <div class="table-card">
+                    <div class="table-header-custom mb-4 d-flex justify-content-between align-items-center">
+                        <h3 class="text-white mb-0">Device Sensors</h3>
+                        <div class="search-bar-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="deviceSearch" placeholder="Search devices..." class="search-input">
+                        </div>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th>Device ID</th>
+                            <th>Name</th>
+                            <th class="admin-only" style="display:none;">User</th>
+                            <th>Type</th>
+                            <th>Reading</th>
+                            <th>Status</th>
+                            <th class="admin-only" style="display:none;">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="sensorsTableBody">
+                        <!-- Populated by script.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </main>
+    </div>
     </div>
 </div>
 
+<!-- Add Device Modal -->
+<div class="modal fade" id="addDeviceModal" tabindex="-1" aria-labelledby="addDeviceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-2xl">
+            <div class="modal-body p-5">
+                <div class="mb-4 d-flex justify-content-between align-items-center">
+                    <h2 class="text-white mb-0">Add New Device</h2>
+                </div>
+
+                <form id="addDeviceForm">
+                    <div class="mb-3">
+                        <label for="deviceName" class="form-label-custom-label">Name</label>
+                        <input type="text" class="form-control-screenshot" id="deviceName" placeholder="Enter device name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="deviceType" class="form-label-custom-label">Type</label>
+                        <select class="form-select-screenshot" id="deviceType" required>
+                            <option value="" selected disabled>Select a type</option>
+                            <option value="Temperature">Temperature</option>
+                            <option value="Humidity">Humidity</option>
+                            <option value="Pressure">Pressure</option>
+                            <option value="Light">Light</option>
+                            <option value="Motion">Motion</option>
+                            <option value="CO2">CO2</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="deviceUnit" class="form-label-custom-label">Measurement Unit</label>
+                        <select class="form-select-screenshot" id="deviceUnit" required disabled>
+                            <option value="" selected disabled>Autofilled based on type</option>
+                            <option value="°C">°C (Temperature)</option>
+                            <option value="%">% (Humidity)</option>
+                            <option value="hPa">hPa (Pressure)</option>
+                            <option value="lx">lx (Light)</option>
+                            <option value="ppm">ppm (CO2)</option>
+                            <option value="Binary">Binary (Motion)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="assignUser" class="form-label-custom-label">Assign to User</label>
+                        <select class="form-select-screenshot" id="assignUser" required>
+                            <option value="" selected disabled>Select a user</option>
+                            <!-- Populated by script.js -->
+                        </select>
+                    </div>
+
+                    <div id="addDeviceMessage" class="error-text mb-3"></div>
+
+                    <div class="mt-4 d-flex gap-3">
+                        <button type="button" class="btn-screenshot-submit" id="saveDeviceBtn">Submit</button>
+                        <button type="button" class="btn-screenshot-cancel" id="cancelDeviceBtn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteDeviceModal" tabindex="-1" aria-labelledby="deleteDeviceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-2xl">
+            <div class="modal-body p-4 text-center">
+                <div class="mb-4">
+                    <i class="fas fa-exclamation-circle text-warning" style="font-size: 48px;"></i>
+                </div>
+                <h3 class="text-white mb-3">Delete Device?</h3>
+                <p class="text-white-50 mb-4">Are you sure you want to remove this device? This action cannot be undone.</p>
+
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn-screenshot-submit" id="confirmDeleteBtn">Delete</button>
+                    <button type="button" class="btn-screenshot-cancel" id="cancelDeleteConfirmBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

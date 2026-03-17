@@ -24,7 +24,12 @@ public class JwtAuthenticationController {
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
             String token = jwtService.generateToken((UserDetails) auth.getPrincipal());
-            return ResponseEntity.ok(new JwtResponse(token));
+            String role = auth.getAuthorities().stream()
+                    .map(a -> a.getAuthority())
+                    .findFirst()
+                    .orElse("ROLE_USER");
+
+            return ResponseEntity.ok(new JwtResponse(token, role));
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(401).body("Incorrect credentials.");
         } catch (DisabledException e) {
