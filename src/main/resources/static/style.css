@@ -373,6 +373,18 @@ body {
     letter-spacing: 0.5px;
 }
 
+.data-table tr.table-danger {
+    background-color: #fff5f5 !important;
+}
+
+.data-table tr.table-danger:hover {
+    background-color: #ffe8e8 !important;
+}
+
+.data-table tr.table-danger td {
+    color: #e03131;
+}
+
 .data-table tr:hover {
     background-color: #fcfcfc;
 }

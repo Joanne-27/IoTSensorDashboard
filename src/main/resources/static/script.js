@@ -541,8 +541,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         devices.forEach(device => {
             const tr = document.createElement('tr');
-            const latestReading = device.readings && device.readings.length > 0
-                ? device.readings[device.readings.length - 1].value + ' ' + device.unit
+            
+            // Calculate Threshold (same as updateMetrics)
+            let threshold = device.maxThreshold;
+            if (threshold === null || threshold === undefined) {
+                if (device.type === 'Temperature') threshold = 28;
+                else if (device.type === 'Humidity') threshold = 80;
+            }
+
+            const latestReadingValue = device.readings && device.readings.length > 0
+                ? device.readings[device.readings.length - 1].value
+                : null;
+
+            const isCritical = latestReadingValue !== null && threshold !== null && latestReadingValue > threshold;
+
+            if (isCritical) {
+                tr.classList.add('table-danger');
+            }
+
+            const latestReadingHtml = latestReadingValue !== null
+                ? `${isCritical ? '<i class="fas fa-exclamation-triangle text-danger" style="margin-right: 8px;"></i>' : ''}${latestReadingValue} ${device.unit}`
                 : '--';
 
             const ownerTd = isAdmin ? `<td><span class="owner-badge">${device.owner}</span></td>` : '';
@@ -569,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><strong>${device.name}</strong></td>
                 ${ownerTd}
                 <td>${device.type}</td>
-                <td>${latestReading}</td>
+                <td>${latestReadingHtml}</td>
                 <td><span class="status-badge online">Online</span></td>
                 ${actionsTd}
             `;
