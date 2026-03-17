@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let cachedDevices = [];
     let deviceToDeleteId = null;
     let deviceToEditSettingsId = null;
+    let deviceToGraphId = null;
+    let sensorChart = null;
     let refreshInterval = null;
 
     // --- View Management ---
@@ -62,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     const settingsMessage = document.getElementById('settingsMessage');
+    const graphRangeForm = document.getElementById('graphRangeForm');
+    const graphMessage = document.getElementById('graphMessage');
     const deviceSearchInput = document.getElementById('deviceSearch');
     const deviceTypeSelect = document.getElementById('deviceType');
     const deviceUnitSelect = document.getElementById('deviceUnit');
@@ -290,6 +294,92 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error saving device:', error);
                 addDeviceMessage.innerText = 'Server error occurred.';
+            }
+        });
+    }
+
+    if (graphRangeForm) {
+        graphRangeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!deviceToGraphId) return;
+
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+            const token = sessionStorage.getItem('jwtToken');
+            const device = cachedDevices.find(d => d.id == deviceToGraphId);
+
+            try {
+                // Ensure correct ISO format by adding :00
+                const response = await fetch(`/api/devices/${deviceToGraphId}/readings?start=${start}:00&end=${end}:00`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (response.ok) {
+                    const readings = await response.json();
+                    if (readings.length === 0) {
+                        graphMessage.innerText = 'No data found for this period.';
+                        if (sensorChart) sensorChart.destroy();
+                        return;
+                    }
+                    graphMessage.innerText = '';
+                    renderChart(readings, device);
+                } else {
+                    const errorMsg = await response.text();
+                    graphMessage.innerText = errorMsg || 'Failed to fetch graph data.';
+                }
+            } catch (error) {
+                console.error('Error fetching graph data:', error);
+                graphMessage.innerText = 'Server error occurred.';
+            }
+        });
+    }
+
+    function renderChart(readings, device) {
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        
+        const labels = readings.map(r => {
+            const date = new Date(r.timestamp);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        });
+        const data = readings.map(r => r.value);
+
+        if (sensorChart) {
+            sensorChart.destroy();
+        }
+
+        sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `${device.name} (${device.unit})`,
+                    data: data,
+                    borderColor: '#2196f3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: { color: '#ffffff80' },
+                        grid: { color: '#ffffff1a' }
+                    },
+                    y: {
+                        ticks: { color: '#ffffff80' },
+                        grid: { color: '#ffffff1a' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#ffffff' }
+                    }
+                }
             }
         });
     }
@@ -591,6 +681,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let actionButtons = '';
             actionButtons += `
+                <button class="btn-graph-icon" data-id="${device.id}" title="View Graph">
+                    <i class="fas fa-chart-line"></i>
+                </button>
                 <button class="btn-settings-icon" data-id="${device.id}" title="Device Settings">
                     <i class="fas fa-cog"></i>
                 </button>
@@ -619,6 +712,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Add event listeners for action buttons
+        tableBody.querySelectorAll('.btn-graph-icon').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                deviceToGraphId = this.getAttribute('data-id');
+                const device = cachedDevices.find(d => d.id == deviceToGraphId);
+                
+                document.getElementById('graphDeviceName').innerText = `Device: ${device.name} (${device.type})`;
+                if (graphMessage) graphMessage.innerText = '';
+                
+                // Set default date range (last 24 hours)
+                const now = new Date();
+                const yesterday = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+                
+                const formatDate = (date) => {
+                    const offset = date.getTimezoneOffset();
+                    const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
+                    return adjustedDate.toISOString().slice(0, 16);
+                };
+                
+                document.getElementById('startDate').value = formatDate(yesterday);
+                document.getElementById('endDate').value = formatDate(now);
+
+                if (sensorChart) {
+                    sensorChart.destroy();
+                    sensorChart = null;
+                }
+
+                const modalElement = document.getElementById('graphDeviceModal');
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    let modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                    modal.show();
+                }
+            });
+        });
+
         tableBody.querySelectorAll('.btn-settings-icon').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();

@@ -520,7 +520,7 @@ body {
     box-shadow: 0 0 0 3px rgba(255, 94, 98, 0.2);
 }
 
-.btn-screenshot-submit, .btn-screenshot-cancel {
+.btn-screenshot-submit, .btn-screenshot-cancel, .btn-screenshot-slate {
     padding: 12px 30px;
     border: none;
     border-radius: 8px;
@@ -550,7 +550,7 @@ body {
     transform: scale(1.2);
 }
 
-.btn-settings-icon {
+.btn-settings-icon, .btn-graph-icon {
     background: transparent;
     color: #4fd1c5;
     border: none;
@@ -558,6 +558,15 @@ body {
     cursor: pointer;
     transition: 0.2s;
     padding: 5px;
+}
+
+.btn-graph-icon {
+    color: #3b82f6;
+}
+
+.btn-graph-icon:hover {
+    color: #2563eb;
+    transform: scale(1.2);
 }
 
 .btn-settings-icon:hover {
@@ -570,6 +579,11 @@ body {
     color: white;
 }
 
+.btn-screenshot-slate {
+    background: #708090; /* Slate Gray */
+    color: white;
+}
+
 .btn-screenshot-cancel {
     background: #4a5568;
     color: white;
@@ -579,6 +593,12 @@ body {
     background: #ff9966; /* Gradient hover effect */
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(255, 94, 98, 0.4);
+}
+
+.btn-screenshot-slate:hover {
+    background: #4a5568; /* Darker gray on hover */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .btn-screenshot-cancel:hover {
@@ -599,5 +619,27 @@ body {
 .modal-backdrop.show {
     opacity: 0.8;
     backdrop-filter: blur(8px);
+}
 
+/* Custom Bottom Modal Styling */
+.modal-bottom {
+    display: flex;
+    align-items: flex-end;
+    min-height: 100%;
+    margin: 0 auto;
+}
+
+.modal-bottom .modal-content {
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+}
+
+/* Ensure the modal animation slides from bottom */
+.modal.fade .modal-dialog.modal-bottom {
+    transform: translate(0, 50px);
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog.modal-bottom {
+    transform: none;
 }

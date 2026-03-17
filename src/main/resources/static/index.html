@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .view {
             display: none;
@@ -170,6 +171,41 @@
             </section>
         </main>
     </div>
+</div>
+</div>
+
+<!-- Graph Modal -->
+<div class="modal fade" id="graphDeviceModal" tabindex="-1" aria-labelledby="graphDeviceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-2xl">
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="text-dark mb-0 fs-2 fw-bold">Sensor Trends</h3>
+                </div>
+                <p id="graphDeviceName" class="text-white-50 mb-4">Device: --</p>
+                
+                <form id="graphRangeForm" class="row g-3 mb-4 align-items-end">
+                    <div class="col-md-3">
+                        <label for="startDate" class="form-label-custom-label">Start Date</label>
+                        <input type="datetime-local" class="form-control-screenshot" id="startDate" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="endDate" class="form-label-custom-label">End Date</label>
+                        <input type="datetime-local" class="form-control-screenshot" id="endDate" required>
+                    </div>
+                    <div class="col-md-6 d-flex gap-2">
+                        <button type="submit" class="btn-screenshot-submit flex-fill">Update Graph</button>
+                        <button type="button" class="btn-screenshot-slate flex-fill" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </form>
+
+                <div class="chart-container" style="position: relative; height:30vh; width:100%">
+                    <canvas id="sensorChart"></canvas>
+                </div>
+                
+                <div id="graphMessage" class="error-text mt-3 text-center"></div>
+            </div>
+        </div>
     </div>
 </div>
 

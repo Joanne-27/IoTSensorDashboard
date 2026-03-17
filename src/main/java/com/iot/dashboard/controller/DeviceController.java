@@ -21,6 +21,9 @@ public class DeviceController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.iot.dashboard.repository.ReadingRepository readingRepository;
+
     @GetMapping
     public ResponseEntity<List<Device>> getMyDevices() {
         // Get authentication details from the security context
@@ -133,6 +136,28 @@ public class DeviceController {
 
                     deviceRepository.save(device);
                     return ResponseEntity.ok().body((Object) "Device settings updated successfully.");
+                })
+                .orElse(ResponseEntity.status(404).body((Object) "Device not found."));
+    }
+
+    @GetMapping("/{id}/readings")
+    public ResponseEntity<?> getDeviceReadings(
+            @PathVariable Integer id,
+            @RequestParam("start") @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime start,
+            @RequestParam("end") @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime end) {
+        
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        return deviceRepository.findById(id.longValue())
+                .map(device -> {
+                    if (!isAdmin && !device.getUser().getUsername().equals(username)) {
+                        return ResponseEntity.status(403).body((Object) "You do not have permission to view readings for this device.");
+                    }
+                    List<com.iot.dashboard.model.Reading> readings = readingRepository.findByDeviceIdAndTimestampBetween(id, start, end);
+                    return ResponseEntity.ok(readings);
                 })
                 .orElse(ResponseEntity.status(404).body((Object) "Device not found."));
     }
