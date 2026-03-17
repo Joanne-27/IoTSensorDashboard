@@ -196,4 +196,65 @@ class JwtAuthenticationIntegrationTest {
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void testUpdateDeviceSettings() throws Exception {
+        // 1. Login as Admin
+        JwtRequest adminLogin = new JwtRequest("test-admin@example.com", "password123");
+        MvcResult loginResult = mockMvc.perform(post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(adminLogin)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String token = objectMapper.readValue(loginResult.getResponse().getContentAsString(), JwtResponse.class).getToken();
+
+        // 2. Fetch all devices to find a Temperature one
+        MvcResult devicesResult = mockMvc.perform(get("/api/devices")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        
+        String devicesJson = devicesResult.getResponse().getContentAsString();
+        com.iot.dashboard.model.Device[] devices = objectMapper.readValue(devicesJson, com.iot.dashboard.model.Device[].class);
+        
+        Integer tempDeviceId = null;
+        for (com.iot.dashboard.model.Device d : devices) {
+            if ("Temperature".equalsIgnoreCase(d.getType())) {
+                tempDeviceId = d.getId();
+                break;
+            }
+        }
+
+        if (tempDeviceId == null) {
+            org.junit.jupiter.api.Assertions.fail("No Temperature device found in initialized data");
+        }
+
+        // 3. Update settings for the found Temperature device
+        java.util.Map<String, Object> settings = new java.util.HashMap<>();
+        settings.put("maxThreshold", 35.5);
+
+        mockMvc.perform(put("/api/devices/" + tempDeviceId + "/settings")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(settings)))
+                .andExpect(status().isOk());
+
+        // 5. Test settings for a non-Temperature device (should work now)
+        Integer humidityDeviceId = null;
+        for (com.iot.dashboard.model.Device d : devices) {
+            if ("Humidity".equalsIgnoreCase(d.getType())) {
+                humidityDeviceId = d.getId();
+                break;
+            }
+        }
+        if (humidityDeviceId != null) {
+            settings.put("maxThreshold", 80.0);
+            mockMvc.perform(put("/api/devices/" + humidityDeviceId + "/settings")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(settings)))
+                    .andExpect(status().isOk());
+        }
+    }
 }

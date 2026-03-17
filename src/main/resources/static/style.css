@@ -538,6 +538,21 @@ body {
     transform: scale(1.2);
 }
 
+.btn-settings-icon {
+    background: transparent;
+    color: #4fd1c5;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.2s;
+    padding: 5px;
+}
+
+.btn-settings-icon:hover {
+    color: #38b2ac;
+    transform: scale(1.2);
+}
+
 .btn-screenshot-submit {
     background: #8be675;
     color: white;

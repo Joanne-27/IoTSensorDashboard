@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let cachedDevices = [];
     let deviceToDeleteId = null;
+    let deviceToEditSettingsId = null;
 
     // --- View Management ---
     function showView(viewId) {
@@ -57,6 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const addDeviceMessage = document.getElementById('addDeviceMessage');
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
     const cancelDeleteConfirmBtn = document.getElementById('cancelDeleteConfirmBtn');
+    const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const settingsMessage = document.getElementById('settingsMessage');
     const deviceSearchInput = document.getElementById('deviceSearch');
     const deviceTypeSelect = document.getElementById('deviceType');
     const deviceUnitSelect = document.getElementById('deviceUnit');
@@ -143,6 +147,48 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
             if (modalInstance) {
                 modalInstance.hide();
+            }
+        });
+    }
+
+    if (cancelSettingsBtn) {
+        cancelSettingsBtn.addEventListener('click', () => {
+            const modalElement = document.getElementById('settingsDeviceModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        });
+    }
+
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', async () => {
+            if (!deviceToEditSettingsId) return;
+            const threshold = document.getElementById('maxThreshold').value;
+            const token = sessionStorage.getItem('jwtToken');
+            
+            try {
+                const response = await fetch(`/api/devices/${deviceToEditSettingsId}/settings`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ maxThreshold: threshold ? parseFloat(threshold) : null })
+                });
+
+                if (response.ok) {
+                    const modalElement = document.getElementById('settingsDeviceModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) modalInstance.hide();
+                    fetchDevices(token);
+                } else {
+                    const errorMsg = await response.text();
+                    settingsMessage.innerText = errorMsg || 'Failed to update settings.';
+                }
+            } catch (error) {
+                console.error('Error updating settings:', error);
+                settingsMessage.innerText = 'Server error occurred.';
             }
         });
     }
@@ -386,18 +432,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 : null;
 
             if (latestReading !== null) {
-                // 2. Aggregate Temperature Data
+                // Determine the threshold: user-set maxThreshold or default based on type
+                let threshold = device.maxThreshold;
+                if (threshold === null || threshold === undefined) {
+                    if (device.type === 'Temperature') threshold = 28;
+                    else if (device.type === 'Humidity') threshold = 80;
+                }
+
+                // Increment criticalCount if latest reading exceeds threshold
+                if (threshold !== null && threshold !== undefined && latestReading > threshold) {
+                    criticalCount++;
+                }
+
+                // Aggregate stats for metrics grid
                 if (device.type === 'Temperature') {
                     tempSum += latestReading;
                     tempCount++;
-                    if (latestReading > 28) criticalCount++;
                 }
-
-                // 3. Aggregate Humidity Data (NEW)
                 if (device.type === 'Humidity') {
                     humSum += latestReading;
                     humCount++;
-                    if (latestReading > 80) criticalCount++;
                 }
             }
         });
@@ -480,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isAdmin = sessionStorage.getItem('userRole') === 'ROLE_ADMIN';
 
-        // Show/Hide "User" Header and "Actions" Header in table
+        // Show/Hide "User" Header in table
         document.querySelectorAll('.data-table th.admin-only, .data-table td.admin-only').forEach(el => {
             el.style.setProperty('display', isAdmin ? 'table-cell' : 'none', 'important');
         });
@@ -492,13 +546,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 : '--';
 
             const ownerTd = isAdmin ? `<td><span class="owner-badge">${device.owner}</span></td>` : '';
-            const actionsTd = isAdmin ? `
-                <td>
+            
+            let actionButtons = '';
+            actionButtons += `
+                <button class="btn-settings-icon" data-id="${device.id}" title="Device Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            `;
+            
+            if (isAdmin) {
+                actionButtons += `
                     <button class="btn-delete-icon" data-id="${device.id}" title="Delete Device">
                         <i class="fas fa-trash-alt"></i>
                     </button>
-                </td>
-            ` : '';
+                `;
+            }
+
+            const actionsTd = `<td>${actionButtons}</td>`;
 
             tr.innerHTML = `
                 <td>#${device.id}</td>
@@ -512,7 +576,28 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.appendChild(tr);
         });
 
-        // Add event listeners for delete buttons
+        // Add event listeners for action buttons
+        tableBody.querySelectorAll('.btn-settings-icon').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                deviceToEditSettingsId = this.getAttribute('data-id');
+                const device = cachedDevices.find(d => d.id == deviceToEditSettingsId);
+                
+                document.getElementById('settingsDeviceName').innerText = `Device: ${device.name}`;
+                document.getElementById('maxThreshold').value = device.maxThreshold || '';
+                const unitLabel = document.querySelector('label[for="maxThreshold"]');
+                if (unitLabel) unitLabel.innerText = `Max Threshold (${device.unit || ''})`;
+                settingsMessage.innerText = '';
+
+                const modalElement = document.getElementById('settingsDeviceModal');
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    let modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                    modal.show();
+                }
+            });
+        });
+
         if (isAdmin) {
             tableBody.querySelectorAll('.btn-delete-icon').forEach(btn => {
                 btn.addEventListener('click', function(e) {

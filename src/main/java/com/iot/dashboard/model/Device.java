@@ -20,6 +20,9 @@ public class Device {
     @Column(nullable = false)
     private String unit;
 
+    @Column
+    private Double maxThreshold;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore // Prevents the infinite JSON recursion loop
@@ -46,6 +49,9 @@ public class Device {
 
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
+
+    public Double getMaxThreshold() { return maxThreshold; }
+    public void setMaxThreshold(Double maxThreshold) { this.maxThreshold = maxThreshold; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

@@ -111,6 +111,38 @@ public class DeviceController {
                 .orElse(ResponseEntity.status(404).body("Device not found."));
     }
 
+    @PutMapping("/{id}/settings")
+    public ResponseEntity<?> updateDeviceSettings(@PathVariable Long id, @RequestBody DeviceSettingsDTO settingsDto) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        return deviceRepository.findById(id)
+                .map(device -> {
+                    // Check if the user is authorized to update this device
+                    if (!isAdmin && !device.getUser().getUsername().equals(username)) {
+                        return ResponseEntity.status(403).body((Object) "You do not have permission to update this device.");
+                    }
+
+                    // Validate maxThreshold
+                    if (settingsDto.getMaxThreshold() != null && settingsDto.getMaxThreshold() > 100) {
+                        return ResponseEntity.badRequest().body((Object) "Threshold cannot exceed 100.");
+                    }
+                    device.setMaxThreshold(settingsDto.getMaxThreshold());
+
+                    deviceRepository.save(device);
+                    return ResponseEntity.ok().body((Object) "Device settings updated successfully.");
+                })
+                .orElse(ResponseEntity.status(404).body((Object) "Device not found."));
+    }
+
+    public static class DeviceSettingsDTO {
+        private Double maxThreshold;
+        public Double getMaxThreshold() { return maxThreshold; }
+        public void setMaxThreshold(Double maxThreshold) { this.maxThreshold = maxThreshold; }
+    }
+
     public static class DeviceDTO {
         private String name;
         private String type;
