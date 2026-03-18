@@ -4,7 +4,7 @@ import com.intuit.karate.junit5.Karate;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-class KarateE2E {
+class TestRunner {
     @Karate.Test
     Karate testDevices() {
         System.setProperty("karate.env", "test");
