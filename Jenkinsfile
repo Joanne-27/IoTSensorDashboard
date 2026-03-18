@@ -1,49 +1,45 @@
 pipeline {
-    agent any [cite: 1]
+    agent any
 
     environment {
-        // Preserved from uploaded file 
+        // Securely managing credentials from the Jenkins Store
         GITHUB_TOKEN = credentials('github-token')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Preserved from both sources [cite: 1, 2]
+                // Automatically clones the branch configured in the Jenkins Job (e.g., feature/testingWithJenkins)
                 checkout scm
             }
         }
 
         stage('Build, Test & Coverage') {
             steps {
-                // Combines 'Build and Test'  with the 'Coverage' requirements
-                // 'verify' includes 'test' and 'package' logic
+                // 'verify' runs unit tests, generates JaCoCo reports, and packages the app
                 sh 'mvn clean verify'
             }
         }
 
         stage('Secure Token Check') {
             steps {
-                // Preserved from uploaded file 
-                sh 'echo "Token is loaded and ready for use."'
+                // Validates that credentials are loaded without exposing the secret
+                sh 'echo "GitHub Token is successfully loaded and ready for use."'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                // Added from your SonarQube snippet
+                // Integration with self-hosted SonarQube
                 withSonarQubeEnv('LocalSonar') {
-                    sh '''
-                      mvn sonar:sonar \
-                        -Dsonar.projectKey=simple-java-maven-app
-                    '''
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=iot-sensor-dashboard'
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                // Added from your SonarQube snippet
+                // Enforce pipeline failure if Quality Gate conditions are not met
                 timeout(time: 2, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -53,10 +49,10 @@ pipeline {
 
     post {
         always {
-            // Preserved JUnit reporting from uploaded file [cite: 4]
+            // Lab 5: Publishes JUnit results to the Jenkins dashboard
             junit 'target/surefire-reports/*.xml'
 
-            // Preserved JaCoCo HTML reporting from uploaded file 
+            // Project Requirement: Publishes JaCoCo HTML reports for code coverage visualization
             publishHTML(target: [
                 reportDir: 'target/site/jacoco',
                 reportFiles: 'index.html',
