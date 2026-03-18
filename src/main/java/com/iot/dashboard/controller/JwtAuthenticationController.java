@@ -1,7 +1,7 @@
 package com.iot.dashboard.controller;
 
-import com.iot.dashboard.model.JwtRequest;
-import com.iot.dashboard.model.JwtResponse;
+import com.iot.dashboard.dto.JwtRequest;
+import com.iot.dashboard.dto.JwtResponse;
 import com.iot.dashboard.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

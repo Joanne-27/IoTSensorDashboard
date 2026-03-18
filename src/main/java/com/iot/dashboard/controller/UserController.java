@@ -1,5 +1,6 @@
 package com.iot.dashboard.controller;
 
+import com.iot.dashboard.dto.UserResponse;
 import com.iot.dashboard.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,18 +25,5 @@ public class UserController {
                 .map(user -> new UserResponse(user.getId(), user.getUsername()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(users);
-    }
-
-    public static class UserResponse {
-        private Integer id;
-        private String username;
-
-        public UserResponse(Integer id, String username) {
-            this.id = id;
-            this.username = username;
-        }
-
-        public Integer getId() { return id; }
-        public String getUsername() { return username; }
     }
 }

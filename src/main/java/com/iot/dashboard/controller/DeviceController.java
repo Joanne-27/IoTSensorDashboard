@@ -1,5 +1,7 @@
 package com.iot.dashboard.controller;
 
+import com.iot.dashboard.dto.DeviceDTO;
+import com.iot.dashboard.dto.DeviceSettingsDTO;
 import com.iot.dashboard.model.Device;
 import com.iot.dashboard.repository.DeviceRepository;
 import com.iot.dashboard.repository.UserRepository;
@@ -160,27 +162,5 @@ public class DeviceController {
                     return ResponseEntity.ok(readings);
                 })
                 .orElse(ResponseEntity.status(404).body((Object) "Device not found."));
-    }
-
-    public static class DeviceSettingsDTO {
-        private Double maxThreshold;
-        public Double getMaxThreshold() { return maxThreshold; }
-        public void setMaxThreshold(Double maxThreshold) { this.maxThreshold = maxThreshold; }
-    }
-
-    public static class DeviceDTO {
-        private String name;
-        private String type;
-        private String unit;
-        private Integer userId;
-
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
-        public String getUnit() { return unit; }
-        public void setUnit(String unit) { this.unit = unit; }
-        public Integer getUserId() { return userId; }
-        public void setUserId(Integer userId) { this.userId = userId; }
     }
 }

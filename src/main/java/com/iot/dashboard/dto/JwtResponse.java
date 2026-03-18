@@ -1,8 +1,10 @@
-package com.iot.dashboard.model;
+package com.iot.dashboard.dto;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public class JwtResponse implements Serializable {
+    @Serial
     private static final long serialVersionUID = -8091879091924046844L;
     private String jwttoken;
     private String role;
