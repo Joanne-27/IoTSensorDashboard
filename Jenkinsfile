@@ -28,7 +28,7 @@ pipeline {
         stage('Secure Token Check') {
             steps {
                 // Validates that credentials are loaded without exposing the secret
-                sh 'echo "GitHub Token is successfully loaded and ready for use."'
+                bat 'echo "GitHub Token is successfully loaded and ready for use."'
             }
         }
 
@@ -36,7 +36,7 @@ pipeline {
             steps {
                 // Integration with self-hosted SonarQube
                 withSonarQubeEnv('LocalSonar') {
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=iot-sensor-dashboard'
+                    bat 'mvn sonar:sonar -Dsonar.projectKey=iot-sensor-dashboard'
                 }
             }
         }
