@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    tools {
+            maven 'Maven_3'
+        }
 
     environment {
         // Securely managing credentials from the Jenkins Store
@@ -17,7 +20,7 @@ pipeline {
         stage('Build, Test & Coverage') {
             steps {
                 // 'verify' runs unit tests, generates JaCoCo reports, and packages the app
-                sh 'mvn clean verify'
+                bat 'mvn clean verify'
             }
         }
 
