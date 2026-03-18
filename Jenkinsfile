@@ -1,40 +1,51 @@
 pipeline {
     agent any
+
     tools {
-            jdk 'JDK_17'
-            maven 'Maven3'
-        }
+        jdk 'JDK_17'
+        maven 'Maven3'
+    }
 
     environment {
-        // Securely managing credentials from the Jenkins Store
         GITHUB_TOKEN = credentials('github-token')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Automatically clones the branch configured in the Jenkins Job (e.g., feature/testingWithJenkins)
                 checkout scm
             }
         }
 
-        stage('Build, Test & Coverage') {
+        stage('Build') {
             steps {
-                // 'verify' runs unit tests, generates JaCoCo reports, and packages the app
-                bat 'mvn clean verify'
+                // Compiles the code without running tests yet
+                bat 'mvn clean compile'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                // Runs standard JUnit tests
+                bat 'mvn test'
+            }
+        }
+
+        stage('Coverage Report') {
+            steps {
+                // Explicitly generates the JaCoCo HTML report
+                bat 'mvn jacoco:report'
             }
         }
 
         stage('Secure Token Check') {
             steps {
-                // Validates that credentials are loaded without exposing the secret
                 bat 'echo "GitHub Token is successfully loaded and ready for use."'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                // Integration with self-hosted SonarQube
                 withSonarQubeEnv('LocalSonar') {
                     bat 'mvn sonar:sonar -Dsonar.projectKey=iot-sensor-dashboard'
                 }
@@ -43,24 +54,44 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                // Enforce pipeline failure if Quality Gate conditions are not met
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
+            }
+        }
+
+        stage('API Tests (Karate)') {
+            steps {
+                // Runs specific Karate TestRunner
+                bat 'mvn test -Dtest=TestRunner'
+            }
+        }
+
+        stage('UI Tests (Selenium)') {
+            steps {
+                // Runs Selenium tests using the profile defined in your pom.xml
+                bat 'mvn verify -Pselenium'
             }
         }
     }
 
     post {
         always {
-            // Lab 5: Publishes JUnit results to the Jenkins dashboard
+            // Records results from all test stages for the Trend Graph
             junit 'target/surefire-reports/*.xml'
 
-            // Project Requirement: Publishes JaCoCo HTML reports for code coverage visualization
             publishHTML(target: [
                 reportDir: 'target/site/jacoco',
                 reportFiles: 'index.html',
                 reportName: 'JaCoCo Code Coverage',
+                keepAll: true,
+                alwaysLinkToLastBuild: true
+            ])
+
+            publishHTML(target: [
+                reportDir: 'target/karate-reports',
+                reportFiles: 'karate-summary.html',
+                reportName: 'Karate API Reports',
                 keepAll: true,
                 alwaysLinkToLastBuild: true
             ])
