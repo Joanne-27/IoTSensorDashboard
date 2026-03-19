@@ -5,8 +5,8 @@ Feature: Device API tests
     * def login =
       """
       {
-        "username": "test@example.com",
-        "password": "password123"
+        "username": "admin@mail.com",
+         "password": "password123"
       }
       """
     * path '/auth/login'
