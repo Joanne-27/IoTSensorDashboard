@@ -5,6 +5,7 @@ import com.iot.dashboard.model.Reading;
 import com.iot.dashboard.repository.DeviceRepository;
 import com.iot.dashboard.repository.ReadingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Random;
 
 @Service
+@ConditionalOnProperty(name = "app.scheduler.enabled", havingValue = "true", matchIfMissing = true)
 public class SensorReadingScheduler {
 
     @Autowired

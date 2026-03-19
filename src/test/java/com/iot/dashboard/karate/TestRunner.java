@@ -2,8 +2,10 @@ package com.iot.dashboard.karate;
 
 import com.intuit.karate.junit5.Karate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@ActiveProfiles("test")
 class TestRunner {
     @Karate.Test
     Karate testDevices() {
