@@ -18,19 +18,22 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 class DeviceControllerUnitTest {
 
     @org.springframework.boot.test.context.TestConfiguration
@@ -54,6 +57,11 @@ class DeviceControllerUnitTest {
 
     @MockBean
     private ReadingRepository readingRepository;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+    }
 
     private void mockUser(String username, String role) {
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -103,7 +111,7 @@ class DeviceControllerUnitTest {
         // Ensure no user is authenticated
         SecurityContextHolder.clearContext();
 
-        mockMvc.perform(get("/api/devices"))
+        mockMvc.perform(get("/api/devices").with(anonymous()))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -142,7 +150,7 @@ class DeviceControllerUnitTest {
         device.setId(1);
         device.setUser(user);
 
-        when(deviceRepository.findById(1L)).thenReturn(Optional.of(device));
+        doReturn(Optional.of(device)).when(deviceRepository).findById(1L);
 
         mockMvc.perform(put("/api/devices/1/settings")
                         .contentType("application/json")
@@ -160,7 +168,7 @@ class DeviceControllerUnitTest {
         device.setId(1);
         device.setUser(user);
 
-        when(deviceRepository.findById(1L)).thenReturn(Optional.of(device));
+        doReturn(Optional.of(device)).when(deviceRepository).findById(1L);
 
         mockMvc.perform(put("/api/devices/1/settings")
                         .contentType("application/json")
