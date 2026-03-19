@@ -11,6 +11,7 @@ public class Reading {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(name = "reading_value")
     private Double value;
     private LocalDateTime timestamp = LocalDateTime.now();
 

@@ -3,6 +3,7 @@ package com.iot.dashboard.controller;
 import com.iot.dashboard.model.Device;
 import com.iot.dashboard.model.User;
 import com.iot.dashboard.repository.DeviceRepository;
+import com.iot.dashboard.repository.ReadingRepository;
 import com.iot.dashboard.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class DeviceControllerUnitTest {
 
     @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private ReadingRepository readingRepository;
 
     private void mockUser(String username, String role) {
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -172,6 +176,126 @@ public class DeviceControllerUnitTest {
         when(deviceRepository.findById(99L)).thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/api/devices/99"))
+                .andExpect(status().isNotFound());
+    }
+    @Test
+    public void getMyDevices_AdminSuccess() throws Exception {
+        mockUser("admin@example.com", "ROLE_ADMIN");
+        Device device = new Device();
+        device.setId(1);
+        device.setName("Admin Device");
+
+        when(deviceRepository.findAll()).thenReturn(List.of(device));
+
+        mockMvc.perform(get("/api/devices"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Admin Device"));
+    }
+
+    @Test
+    public void addDevice_ValidationError() throws Exception {
+        mockUser("admin@example.com", "ROLE_ADMIN");
+
+        mockMvc.perform(post("/api/devices")
+                        .contentType("application/json")
+                        .content("{\"name\": \"\", \"type\": \"Temp\", \"unit\": \"C\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void addDevice_TargetUserNotFound() throws Exception {
+        mockUser("admin@example.com", "ROLE_ADMIN");
+        when(userRepository.findById(99)).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/devices")
+                        .contentType("application/json")
+                        .content("{\"name\": \"Sensor\", \"type\": \"Temp\", \"unit\": \"C\", \"userId\": 99}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void deleteDevice_Success() throws Exception {
+        mockUser("admin@example.com", "ROLE_ADMIN");
+        Device device = new Device();
+        device.setId(1);
+        when(deviceRepository.findById(1L)).thenReturn(Optional.of(device));
+
+        mockMvc.perform(delete("/api/devices/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void updateDeviceSettings_Forbidden() throws Exception {
+        mockUser("other@example.com", "ROLE_USER");
+        User owner = new User();
+        owner.setUsername("owner@example.com");
+
+        Device device = new Device();
+        device.setId(1);
+        device.setUser(owner);
+
+        when(deviceRepository.findById(1L)).thenReturn(Optional.of(device));
+
+        mockMvc.perform(put("/api/devices/1/settings")
+                        .contentType("application/json")
+                        .content("{\"maxThreshold\": 50.0}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void getDeviceReadings_Success() throws Exception {
+        mockUser("test@example.com", "ROLE_USER");
+        User user = new User();
+        user.setUsername("test@example.com");
+
+        Device device = new Device();
+        device.setId(1);
+        device.setUser(user);
+
+        when(deviceRepository.findById(1L)).thenReturn(Optional.of(device));
+
+        mockMvc.perform(get("/api/devices/1/readings")
+                        .param("start", "2023-01-01T00:00:00")
+                        .param("end", "2023-01-01T23:59:59"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void getDeviceReadings_Forbidden() throws Exception {
+        mockUser("other@example.com", "ROLE_USER");
+        User owner = new User();
+        owner.setUsername("owner@example.com");
+
+        Device device = new Device();
+        device.setId(1);
+        device.setUser(owner);
+
+        when(deviceRepository.findById(1L)).thenReturn(Optional.of(device));
+
+        mockMvc.perform(get("/api/devices/1/readings")
+                        .param("start", "2023-01-01T00:00:00")
+                        .param("end", "2023-01-01T23:59:59"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void getDeviceReadings_NotFound() throws Exception {
+        mockUser("admin@example.com", "ROLE_ADMIN");
+        when(deviceRepository.findById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/devices/99/readings")
+                        .param("start", "2023-01-01T00:00:00")
+                        .param("end", "2023-01-01T23:59:59"))
+                .andExpect(status().isNotFound());
+    }
+    @Test
+    public void updateDeviceSettings_NotFound() throws Exception {
+        mockUser("admin@example.com", "ROLE_ADMIN");
+        when(deviceRepository.findById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/devices/99/settings")
+                        .contentType("application/json")
+                        .content("{\"maxThreshold\": 50.0}"))
                 .andExpect(status().isNotFound());
     }
 }
