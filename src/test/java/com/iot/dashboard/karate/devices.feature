@@ -27,7 +27,9 @@ Feature: Device API tests
         "name": "#string",
         "type": "#string",
         "unit": "#string",
-        "readings": "#[]"
+        "maxThreshold": "#number",
+        "readings": "#[]",
+        "owner": "#string"
       }
       """
 

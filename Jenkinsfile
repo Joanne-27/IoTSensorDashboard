@@ -27,7 +27,8 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 // Runs standard JUnit tests
-                bat 'mvn test'
+                // EXCLUSION: Runs all tests EXCEPT the Karate TestRunner
+                bat 'mvn test -Dtest=!TestRunner'
             }
         }
 
@@ -62,8 +63,9 @@ pipeline {
 
         stage('API Tests (Karate)') {
             steps {
-                // Runs specific Karate TestRunner
-                bat 'mvn test -Dtest=TestRunner'
+                // INCLUSION: Runs ONLY the Karate TestRunner
+                // Now that the app is built and Sonar is done, we run E2E API tests
+                bat 'mvn test -Dtest=TestRunner -Dsurefire.failIfNoSpecifiedTests=false'
             }
         }
 
