@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
-public class DeviceControllerUnitTest {
+class DeviceControllerUnitTest {
 
     @org.springframework.boot.test.context.TestConfiguration
     static class TestConfig {
@@ -68,7 +68,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void getMyDevices_Success() throws Exception {
+    void getMyDevices_Success() throws Exception {
         mockUser("test@example.com");
         User user = new User();
         user.setId(1);
@@ -90,7 +90,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void getMyDevices_UserNotFound() throws Exception {
+    void getMyDevices_UserNotFound() throws Exception {
         mockUser("nonexistent@example.com");
         when(userRepository.findByUsername("nonexistent@example.com")).thenReturn(Optional.empty());
 
@@ -99,18 +99,16 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void getMyDevices_Unauthorized() throws Exception {
+    void getMyDevices_Unauthorized() throws Exception {
+        // Ensure no user is authenticated
         SecurityContextHolder.clearContext();
 
-        try {
-            mockMvc.perform(get("/api/devices"));
-        } catch (Exception e) {
-            // Expected
-        }
+        mockMvc.perform(get("/api/devices"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    public void addDevice_ForbiddenForUser() throws Exception {
+    void addDevice_ForbiddenForUser() throws Exception {
         mockUser("test@example.com", "ROLE_USER");
 
         mockMvc.perform(post("/api/devices")
@@ -120,7 +118,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void addDevice_SuccessForAdmin() throws Exception {
+    void addDevice_SuccessForAdmin() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
         User adminUser = new User();
         adminUser.setUsername("admin@example.com");
@@ -135,7 +133,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void updateDeviceSettings_Success() throws Exception {
+    void updateDeviceSettings_Success() throws Exception {
         mockUser("test@example.com", "ROLE_USER");
         User user = new User();
         user.setUsername("test@example.com");
@@ -153,7 +151,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void updateDeviceSettings_InvalidThreshold() throws Exception {
+    void updateDeviceSettings_InvalidThreshold() throws Exception {
         mockUser("test@example.com", "ROLE_USER");
         User user = new User();
         user.setUsername("test@example.com");
@@ -171,7 +169,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void deleteDevice_DeviceNotFound() throws Exception {
+    void deleteDevice_DeviceNotFound() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
         when(deviceRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -179,7 +177,7 @@ public class DeviceControllerUnitTest {
                 .andExpect(status().isNotFound());
     }
     @Test
-    public void getMyDevices_AdminSuccess() throws Exception {
+    void getMyDevices_AdminSuccess() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
         Device device = new Device();
         device.setId(1);
@@ -193,7 +191,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void addDevice_ValidationError() throws Exception {
+    void addDevice_ValidationError() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
 
         mockMvc.perform(post("/api/devices")
@@ -203,7 +201,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void addDevice_TargetUserNotFound() throws Exception {
+    void addDevice_TargetUserNotFound() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
         when(userRepository.findById(99)).thenReturn(Optional.empty());
 
@@ -214,7 +212,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void deleteDevice_Success() throws Exception {
+    void deleteDevice_Success() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
         Device device = new Device();
         device.setId(1);
@@ -225,7 +223,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void updateDeviceSettings_Forbidden() throws Exception {
+    void updateDeviceSettings_Forbidden() throws Exception {
         mockUser("other@example.com", "ROLE_USER");
         User owner = new User();
         owner.setUsername("owner@example.com");
@@ -243,7 +241,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void getDeviceReadings_Success() throws Exception {
+    void getDeviceReadings_Success() throws Exception {
         mockUser("test@example.com", "ROLE_USER");
         User user = new User();
         user.setUsername("test@example.com");
@@ -261,7 +259,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void getDeviceReadings_Forbidden() throws Exception {
+    void getDeviceReadings_Forbidden() throws Exception {
         mockUser("other@example.com", "ROLE_USER");
         User owner = new User();
         owner.setUsername("owner@example.com");
@@ -279,7 +277,7 @@ public class DeviceControllerUnitTest {
     }
 
     @Test
-    public void getDeviceReadings_NotFound() throws Exception {
+    void getDeviceReadings_NotFound() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
         when(deviceRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -289,7 +287,7 @@ public class DeviceControllerUnitTest {
                 .andExpect(status().isNotFound());
     }
     @Test
-    public void updateDeviceSettings_NotFound() throws Exception {
+    void updateDeviceSettings_NotFound() throws Exception {
         mockUser("admin@example.com", "ROLE_ADMIN");
         when(deviceRepository.findById(99L)).thenReturn(Optional.empty());
 
