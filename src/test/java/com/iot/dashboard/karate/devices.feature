@@ -27,7 +27,7 @@ Feature: Device API tests
         "name": "#string",
         "type": "#string",
         "unit": "#string",
-        "maxThreshold": "##number", // Double hash allows null OR a number
+        "maxThreshold": "##number",
         "readings": "#[]",
         "owner": "#string"
       }
